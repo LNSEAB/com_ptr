@@ -8,11 +8,14 @@ edition = "2018"
 
 [target.'cfg(all(windows, not(test)))'.dependencies]
 winapi = { version = "0.3.6", features = [
-	"unknwnbase"
+	"combaseapi",
+	"unknwnbase",
 ] }
 
 [target.'cfg(all(windows, test))'.dependencies]
 winapi = { version = "0.3.6", features = [
+	"combaseapi",
 	"unknwnbase",
-	"dxgi"
+	"objbase",
+	"wincodec",
 ] }
