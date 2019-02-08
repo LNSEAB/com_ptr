@@ -1,0 +1,18 @@
+[package]
+name = "com_ptr"
+version = "0.1.0"
+authors = ["LNSEAB <lnseab@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+
+[target.'cfg(all(windows, not(test)))'.dependencies]
+winapi = { version = "0.3.6", features = [
+	"unknwnbase"
+] }
+
+[target.'cfg(all(windows, test))'.dependencies]
+winapi = { version = "0.3.6", features = [
+	"unknwnbase",
+	"dxgi"
+] }
