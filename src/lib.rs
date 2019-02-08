@@ -31,16 +31,19 @@ impl<T: Interface> ComPtr<T> {
         Ok(ComPtr::from_ptr(f()?))
     }
 
+    #[inline]
     pub fn from_ptr(p: *mut T) -> ComPtr<T> {
         ComPtr {
             p: NonNull::new(p).expect("ComPtr should not be null.")
         }
     }
 
+    #[inline]
     pub fn as_ptr(&self) -> *mut T {
         self.p.as_ptr()
     }
 
+    #[inline]
     pub fn as_ref(&self) -> &T {
         unsafe { self.p.as_ref() }
     }
@@ -51,14 +54,17 @@ impl<T: Interface> ComPtr<T> {
         hresult(ComPtr::from_ptr(p as *mut U), res)
     }
 
+    #[inline]
     fn as_unknown(&self) -> &IUnknown {
         unsafe { &*(self.as_ptr() as *mut IUnknown) }
     }
 
+    #[inline]
     fn add_ref(&self) {
         unsafe { self.as_unknown().AddRef() };
     }
 
+    #[inline]
     fn release(&self) {
         unsafe { self.as_unknown().Release() };
     }
@@ -103,7 +109,7 @@ pub fn co_create_instance<T: Interface>(clsid: REFCLSID, outer: Option<*mut IUnk
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winapi::shared::wtypesbase::*;
+    use winapi::shared::wtypesbase::CLSCTX_INPROC_SERVER;
     use winapi::um::objbase::CoInitialize;
     use winapi::um::wincodec::*;
 
