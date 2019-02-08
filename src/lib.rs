@@ -4,16 +4,15 @@ use std::ops::Deref;
 use std::ptr::{null_mut, NonNull};
 use winapi::shared::guiddef::REFCLSID;
 use winapi::shared::minwindef::DWORD;
-use winapi::um::unknwnbase::IUnknown;
 use winapi::um::combaseapi::CoCreateInstance;
+use winapi::um::unknwnbase::IUnknown;
 use winapi::um::winnt::HRESULT;
 use winapi::Interface;
 
 pub fn hresult<T>(obj: T, res: HRESULT) -> Result<T, HRESULT> {
     if res < 0 {
         Err(res)
-    }
-    else {
+    } else {
         Ok(obj)
     }
 }
@@ -24,9 +23,9 @@ pub struct ComPtr<T: Interface> {
 }
 
 impl<T: Interface> ComPtr<T> {
-    pub fn new<F, E>(f: F) -> Result<ComPtr<T>, E> 
+    pub fn new<F, E>(f: F) -> Result<ComPtr<T>, E>
     where
-        F: FnOnce() -> Result<*mut T, E>
+        F: FnOnce() -> Result<*mut T, E>,
     {
         Ok(ComPtr::from_ptr(f()?))
     }
@@ -34,7 +33,7 @@ impl<T: Interface> ComPtr<T> {
     #[inline]
     pub fn from_ptr(p: *mut T) -> ComPtr<T> {
         ComPtr {
-            p: NonNull::new(p).expect("ComPtr should not be null.")
+            p: NonNull::new(p).expect("ComPtr should not be null."),
         }
     }
 
@@ -94,7 +93,11 @@ impl<T: Interface> Drop for ComPtr<T> {
 unsafe impl<T: Interface> Send for ComPtr<T> {}
 unsafe impl<T: Interface> Sync for ComPtr<T> {}
 
-pub fn co_create_instance<T: Interface>(clsid: REFCLSID, outer: Option<*mut IUnknown>, clsctx: DWORD) -> Result<ComPtr<T>, HRESULT> {
+pub fn co_create_instance<T: Interface>(
+    clsid: REFCLSID,
+    outer: Option<*mut IUnknown>,
+    clsctx: DWORD,
+) -> Result<ComPtr<T>, HRESULT> {
     ComPtr::new(|| {
         let mut obj = null_mut();
         let outer = match outer {
@@ -117,7 +120,11 @@ mod tests {
     fn co_create_instance_test() {
         unsafe { CoInitialize(null_mut()) };
 
-        let p = co_create_instance::<IWICImagingFactory>(&CLSID_WICImagingFactory, None, CLSCTX_INPROC_SERVER);
+        let p = co_create_instance::<IWICImagingFactory>(
+            &CLSID_WICImagingFactory,
+            None,
+            CLSCTX_INPROC_SERVER,
+        );
         if let Err(res) = p {
             panic!("HRESULT: 0x{:<08x}", res);
         }
