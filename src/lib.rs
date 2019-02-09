@@ -27,11 +27,11 @@ impl<T: Interface> ComPtr<T> {
     where
         F: FnOnce() -> Result<*mut T, E>,
     {
-        Ok(ComPtr::from_ptr(f()?))
+        unsafe { Ok(ComPtr::from_raw(f()?)) }
     }
 
     #[inline]
-    pub fn from_ptr(p: *mut T) -> ComPtr<T> {
+    pub unsafe fn from_raw(p: *mut T) -> ComPtr<T> {
         ComPtr {
             p: NonNull::new(p).expect("ComPtr should not be null."),
         }
@@ -48,9 +48,11 @@ impl<T: Interface> ComPtr<T> {
     }
 
     pub fn query_interface<U: Interface>(&self) -> Result<ComPtr<U>, HRESULT> {
-        let mut p = null_mut();
-        let res = unsafe { self.as_unknown().QueryInterface(&U::uuidof(), &mut p) };
-        hresult(ComPtr::from_ptr(p as *mut U), res)
+        unsafe {
+            let mut p = null_mut();
+            let res = self.as_unknown().QueryInterface(&U::uuidof(), &mut p);
+            hresult(ComPtr::from_raw(p as *mut U), res)
+        }
     }
 
     #[inline]
