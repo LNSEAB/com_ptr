@@ -1,3 +1,27 @@
+//! A smart pointer for Windows COM Interfaces.
+//! 
+//! # Examples
+//! Creates a ComPtr from `CreateDXGIFactory1` function.
+//! 
+//! ```
+//! extern crate winapi;
+//! extern crate com_ptr;
+//! 
+//! use winapi::shared::dxgi::*;
+//! use winapi::um::winnt::HRESULT;
+//! use winapi::Interface;
+//! use com_ptr::{ComPtr, hresult};
+//! 
+//! fn create_dxgi_factory<T: Interface>() -> Result<ComPtr<T>, HRESULT> {
+//!     ComPtr::new(|| {
+//!         let mut obj = std::ptr::null_mut();
+//!         let res = unsafe { CreateDXGIFactory1(&T::uuidof(), &mut obj) };
+//!         hresult(obj as *mut T, res)
+//!     })
+//! }
+//! ```
+//! 
+
 extern crate winapi;
 
 use std::ops::Deref;
@@ -9,6 +33,9 @@ use winapi::um::unknwnbase::IUnknown;
 use winapi::um::winnt::HRESULT;
 use winapi::Interface;
 
+/// Returns a object when success.
+/// 
+/// If `res` is success, returns a object. OtherWise, returns a HRESULT value.
 pub fn hresult<T>(obj: T, res: HRESULT) -> Result<T, HRESULT> {
     if res < 0 {
         Err(res)
@@ -17,12 +44,17 @@ pub fn hresult<T>(obj: T, res: HRESULT) -> Result<T, HRESULT> {
     }
 }
 
+/// A smart pointer for COM Interfaces.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ComPtr<T: Interface> {
     p: NonNull<T>,
 }
 
 impl<T: Interface> ComPtr<T> {
+    /// Creates a new ComPtr from a closure.
+    /// 
+    /// ## Safety
+    /// 'f' must returns non-null.
     pub fn new<F, E>(f: F) -> Result<ComPtr<T>, E>
     where
         F: FnOnce() -> Result<*mut T, E>,
@@ -30,23 +62,30 @@ impl<T: Interface> ComPtr<T> {
         unsafe { Ok(ComPtr::from_raw(f()?)) }
     }
 
+    /// Creates a new ComPtr from a raw pointer.
+    /// 
+    /// ## Safety
+    /// 'ptr' must be non-null.
     #[inline]
-    pub unsafe fn from_raw(p: *mut T) -> ComPtr<T> {
+    pub unsafe fn from_raw(ptr: *mut T) -> ComPtr<T> {
         ComPtr {
-            p: NonNull::new(p).expect("ComPtr should not be null."),
+            p: NonNull::new(ptr).expect("ComPtr should not be null."),
         }
     }
 
+    /// Returns a pointer
     #[inline]
     pub fn as_ptr(&self) -> *mut T {
         self.p.as_ptr()
     }
 
+    /// Returns a reference
     #[inline]
     pub fn as_ref(&self) -> &T {
         unsafe { self.p.as_ref() }
     }
 
+    /// Returns a `ComPtr<U>` when interface `T` support interface `U`.
     pub fn query_interface<U: Interface>(&self) -> Result<ComPtr<U>, HRESULT> {
         unsafe {
             let mut p = null_mut();
@@ -95,6 +134,7 @@ impl<T: Interface> Drop for ComPtr<T> {
 unsafe impl<T: Interface> Send for ComPtr<T> {}
 unsafe impl<T: Interface> Sync for ComPtr<T> {}
 
+/// Creates a ComPtr of the class associated with a specified CLSID.
 pub fn co_create_instance<T: Interface>(
     clsid: REFCLSID,
     outer: Option<*mut IUnknown>,
