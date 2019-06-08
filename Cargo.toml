@@ -9,15 +9,15 @@ readme = "README.md"
 description = "A smart pointer for Windows COM Interfaces"
 
 [target.'cfg(not(test))'.dependencies]
-winapi = { git = "https://github.com/retep998/winapi-rs", branch = "0.3", features = [
+winapi = { version = "0.3.7", features = [
 	"combaseapi",
 	"unknwnbase",
-] }
+]}
 
 [target.'cfg(test)'.dependencies]
-winapi = { git = "https://github.com/retep998/winapi-rs", branch = "0.3", features = [
+winapi = { version = "0.3.7", features = [
 	"combaseapi",
 	"unknwnbase",
 	"objbase",
 	"wincodec",
-] }
+]}
