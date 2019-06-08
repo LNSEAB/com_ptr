@@ -6,6 +6,7 @@ edition = "2018"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/LNSEAB/com_ptr"
 readme = "README.md"
+keywords = ["windows", "winapi", "COM"]
 description = "A smart pointer for Windows COM Interfaces"
 
 [target.'cfg(not(test))'.dependencies]
