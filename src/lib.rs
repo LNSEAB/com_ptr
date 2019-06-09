@@ -1,17 +1,17 @@
 //! A smart pointer for Windows COM Interfaces.
-//! 
+//!
 //! # Examples
 //! Creates a ComPtr from `CreateDXGIFactory1` function.
-//! 
+//!
 //! ```
 //! extern crate winapi;
 //! extern crate com_ptr;
-//! 
+//!
 //! use winapi::shared::dxgi::*;
 //! use winapi::um::winnt::HRESULT;
 //! use winapi::Interface;
 //! use com_ptr::{ComPtr, hresult};
-//! 
+//!
 //! fn create_dxgi_factory<T: Interface>() -> Result<ComPtr<T>, HRESULT> {
 //!     ComPtr::new(|| {
 //!         let mut obj = std::ptr::null_mut();
@@ -20,7 +20,8 @@
 //!     })
 //! }
 //! ```
-//! 
+//!
+#![cfg(windows)]
 
 extern crate winapi;
 
@@ -34,7 +35,7 @@ use winapi::um::winnt::HRESULT;
 use winapi::Interface;
 
 /// Returns a object when success.
-/// 
+///
 /// If `res` is success, returns a object. OtherWise, returns a HRESULT value.
 pub fn hresult<T>(obj: T, res: HRESULT) -> Result<T, HRESULT> {
     if res < 0 {
@@ -52,7 +53,7 @@ pub struct ComPtr<T: Interface> {
 
 impl<T: Interface> ComPtr<T> {
     /// Creates a new ComPtr from a closure.
-    /// 
+    ///
     /// ## Safety
     /// 'f' must returns non-null.
     pub fn new<F, E>(f: F) -> Result<ComPtr<T>, E>
@@ -63,7 +64,7 @@ impl<T: Interface> ComPtr<T> {
     }
 
     /// Creates a new ComPtr from a raw pointer.
-    /// 
+    ///
     /// ## Safety
     /// 'ptr' must be non-null.
     #[inline]
