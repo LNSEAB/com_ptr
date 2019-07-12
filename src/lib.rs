@@ -4,9 +4,6 @@
 //! Creates a ComPtr from `CreateDXGIFactory1` function.
 //!
 //! ```
-//! extern crate winapi;
-//! extern crate com_ptr;
-//!
 //! use winapi::shared::dxgi::*;
 //! use winapi::um::winnt::HRESULT;
 //! use winapi::Interface;
