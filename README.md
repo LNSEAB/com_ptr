@@ -5,7 +5,7 @@ A smart pointer for Windows COM Interfaces
 ## Example
 Creates a ComPtr from `CreateDXGIFactory1` function.
 
-```
+```rust
 use winapi::shared::dxgi::*;
 use winapi::um::winnt::HRESULT;
 use winapi::Interface;
