@@ -46,7 +46,6 @@ pub fn hresult<T>(obj: T, res: HRESULT) -> Result<T, HRESULT> {
 }
 
 /// A smart pointer for COM Interfaces.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ComPtr<T: Interface> {
     p: NonNull<T>,
 }
@@ -132,6 +131,32 @@ impl<T: Interface> Drop for ComPtr<T> {
     }
 }
 
+impl<T: Interface> PartialEq for ComPtr<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ptr() == other.as_ptr()
+    }
+}
+
+impl<T: Interface> Eq for ComPtr<T> {}
+
+impl<T: Interface> PartialOrd for ComPtr<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.as_ptr().partial_cmp(&other.as_ptr())
+    }
+}
+
+impl<T: Interface> Ord for ComPtr<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.as_ptr().cmp(&other.as_ptr())
+    }
+}
+
+impl<T: Interface> std::fmt::Debug for ComPtr<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self.as_ptr())
+    }
+}
+
 unsafe impl<T: Interface> Send for ComPtr<T> {}
 unsafe impl<T: Interface> Sync for ComPtr<T> {}
 
@@ -171,5 +196,8 @@ mod tests {
         if let Err(res) = p {
             panic!("HRESULT: 0x{:<08x}", res);
         }
+        assert!(p == p);
+        assert!(p <= p);
+        println!("{:?}", p);
     }
 }
