@@ -10,13 +10,13 @@ keywords = ["windows", "win32", "winapi", "COM"]
 description = "A smart pointer for Windows COM Interfaces"
 
 [target.'cfg(not(test))'.dependencies]
-winapi = { version = "0.3.7", features = [
+winapi = { version = "0.3.8", features = [
 	"combaseapi",
 	"unknwnbase",
 ]}
 
 [target.'cfg(test)'.dependencies]
-winapi = { version = "0.3.7", features = [
+winapi = { version = "0.3.8", features = [
 	"combaseapi",
 	"unknwnbase",
 	"objbase",
