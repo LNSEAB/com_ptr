@@ -7,9 +7,9 @@
 //! use winapi::shared::dxgi::*;
 //! use winapi::um::winnt::HRESULT;
 //! use winapi::Interface;
-//! use com_ptr::{ComPtr, hresult};
+//! use com_ptr::{ComPtr, HResult, hresult};
 //!
-//! fn create_dxgi_factory<T: Interface>() -> Result<ComPtr<T>, HRESULT> {
+//! fn create_dxgi_factory<T: Interface>() -> Result<ComPtr<T>, HResult> {
 //!     ComPtr::new(|| {
 //!         let mut obj = std::ptr::null_mut();
 //!         let res = unsafe { CreateDXGIFactory1(&T::uuidof(), &mut obj) };
@@ -20,8 +20,6 @@
 //!
 #![cfg(windows)]
 
-extern crate winapi;
-
 use std::ops::Deref;
 use std::ptr::{null_mut, NonNull};
 use winapi::shared::guiddef::REFCLSID;
@@ -29,14 +27,60 @@ use winapi::shared::minwindef::DWORD;
 use winapi::um::combaseapi::CoCreateInstance;
 use winapi::um::unknwnbase::IUnknown;
 use winapi::um::winnt::HRESULT;
+use winapi::um::winbase::*;
 use winapi::Interface;
+
+/// A object that wraps HRESULT.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[repr(transparent)]
+pub struct HResult(pub HRESULT);
+
+impl HResult {
+    #[inline]
+    pub fn is_succeed(&self) -> bool {
+        self.0 >= 0
+    }
+    
+    #[inline]
+    pub fn is_failed(&self) -> bool {
+        self.0 < 0
+    }
+    
+    #[inline]
+    pub fn code(&self) -> HRESULT {
+        self.0
+    }
+}
+
+impl std::fmt::Display for HResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        unsafe {
+            let mut p: *mut u16 = std::ptr::null_mut();
+            let len = FormatMessageW(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                std::ptr::null(),
+                self.0 as u32,
+                0,
+                std::mem::transmute(&mut p),
+                0,
+                std::ptr::null_mut()
+            );
+            let buffer = std::slice::from_raw_parts(p, len as usize);
+            let ret = write!(f, "{}", String::from_utf16_lossy(buffer));
+            LocalFree(p as _);
+            ret
+        }
+    }
+}
+
+impl std::error::Error for HResult {}
 
 /// Returns a object when success.
 ///
-/// If `res` is success, returns a object. OtherWise, returns a HRESULT value.
-pub fn hresult<T>(obj: T, res: HRESULT) -> Result<T, HRESULT> {
+/// If `res` is success, returns a object. OtherWise, returns a HResult object.
+pub fn hresult<T>(obj: T, res: HRESULT) -> Result<T, HResult> {
     if res < 0 {
-        Err(res)
+        Err(HResult(res))
     } else {
         Ok(obj)
     }
@@ -83,7 +127,7 @@ impl<T: Interface> ComPtr<T> {
     }
 
     /// Returns a `ComPtr<U>` when interface `T` support interface `U`.
-    pub fn query_interface<U: Interface>(&self) -> Result<ComPtr<U>, HRESULT> {
+    pub fn query_interface<U: Interface>(&self) -> Result<ComPtr<U>, HResult> {
         unsafe {
             let mut p = null_mut();
             let res = self.as_unknown().QueryInterface(&U::uuidof(), &mut p);
@@ -162,7 +206,7 @@ pub fn co_create_instance<T: Interface>(
     clsid: REFCLSID,
     outer: Option<*mut IUnknown>,
     clsctx: DWORD,
-) -> Result<ComPtr<T>, HRESULT> {
+) -> Result<ComPtr<T>, HResult> {
     ComPtr::new(|| {
         let mut obj = null_mut();
         let outer = match outer {
@@ -191,10 +235,29 @@ mod tests {
             CLSCTX_INPROC_SERVER,
         );
         if let Err(res) = p {
-            panic!("HRESULT: 0x{:<08x}", res);
+            panic!("HRESULT: 0x{:<08x}", res.code());
         }
         assert!(p == p);
         assert!(p <= p);
         println!("{:?}", p);
+    }
+    
+    fn ret_result() -> Result<(), HResult> {
+        Ok(())
+    }
+    
+    #[test]
+    fn anyhow_test() {
+        fn result() -> anyhow::Result<()> {
+            Ok(ret_result()?)
+        }
+        result().ok().unwrap();
+    }
+    
+    #[test]
+    #[ignore]
+    fn display_test() {
+        let ret = HResult(0);
+        println!("0x{:<08x} {}", ret.code(), ret);
     }
 }
