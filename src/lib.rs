@@ -120,12 +120,6 @@ impl<T: Interface> ComPtr<T> {
         self.p.as_ptr()
     }
 
-    /// Returns a reference
-    #[inline]
-    pub fn as_ref(&self) -> &T {
-        unsafe { self.p.as_ref() }
-    }
-
     /// Returns a `ComPtr<U>` when interface `T` support interface `U`.
     pub fn query_interface<U: Interface>(&self) -> Result<ComPtr<U>, HResult> {
         unsafe {
@@ -140,14 +134,19 @@ impl<T: Interface> ComPtr<T> {
         unsafe { &*(self.as_ptr() as *mut IUnknown) }
     }
 
+    /// Increases a reference count.
     #[inline]
-    fn add_ref(&self) {
+    pub fn add_ref(&self) {
         unsafe { self.as_unknown().AddRef() };
     }
 
+    /// Decreases a reference count.
+    ///
+    /// ## Safety
+    /// The reference count greater than 0.
     #[inline]
-    fn release(&self) {
-        unsafe { self.as_unknown().Release() };
+    pub unsafe fn release(&self) {
+        self.as_unknown().Release();
     }
 }
 
@@ -162,13 +161,15 @@ impl<T: Interface> Deref for ComPtr<T> {
 impl<T: Interface> Clone for ComPtr<T> {
     fn clone(&self) -> Self {
         self.add_ref();
-        ComPtr { p: self.p.clone() }
+        ComPtr { p: self.p }
     }
 }
 
 impl<T: Interface> Drop for ComPtr<T> {
     fn drop(&mut self) {
-        self.release();
+        unsafe {
+            self.release();
+        }
     }
 }
 
@@ -195,6 +196,12 @@ impl<T: Interface> Ord for ComPtr<T> {
 impl<T: Interface> std::fmt::Debug for ComPtr<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self.as_ptr())
+    }
+}
+
+impl<T: Interface> std::convert::AsRef<T> for ComPtr<T> {
+    fn as_ref(&self) -> &T {
+        unsafe { self.p.as_ref() }
     }
 }
 
@@ -226,6 +233,7 @@ mod tests {
     use winapi::um::wincodec::*;
 
     #[test]
+    #[allow(clippy::eq_op)]
     fn co_create_instance_test() {
         unsafe { CoInitialize(null_mut()) };
 
@@ -242,6 +250,7 @@ mod tests {
         println!("{:?}", p);
     }
     
+    #[allow(clippy::unnecessary_wraps)]
     fn ret_result() -> Result<(), HResult> {
         Ok(())
     }
